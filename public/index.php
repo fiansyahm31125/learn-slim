@@ -38,7 +38,18 @@ $app->get('/', function ($request, $response) {
     ]);
 });
 
-// Route produk dipindah ke ProductController (src/Controller/ProductController.php)
+// Contoh Doctrine ORM sederhana: daftar semua produk (JSON)
+// $app->get('/products', function (Request $request, Response $response) {
+//     /** @var Doctrine\ORM\EntityManager $em */
+//     $em = $this->get(Doctrine\ORM\EntityManager::class);
+//     $products = $em->getRepository(App\Entity\Product::class)->findAll();
+
+//     $data = array_map(fn(App\Entity\Product $p) => $p->toArray(), $products);
+
+//     $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
+//     $response->withHeader('Content-Type', 'application/json');
+// });
+
 $app->get('/products', [ProductController::class, 'index']);
 
 // Contoh Doctrine ORM: 1 produk by id (JSON)
