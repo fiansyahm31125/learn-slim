@@ -46,4 +46,79 @@ class ProductController
             'products' => array_map(fn(Product $p) => $p->toArray(), $products),
         ]);
     }
+
+    public function create(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody();
+
+        $name = $data['name'] ?? null;
+        $price = $data['price'] ?? null;
+        $stock = $data['stock'] ?? null;
+
+        // $errors = [];
+        // if ($name === '') {
+        //     $errors['name'] = 'Nama wajib diisi.';
+        // }
+        // if ($price === null || $price === '' || filter_var($price, FILTER_VALIDATE_INT) === false || (int) $price < 0) {
+        //     $errors['price'] = 'Price wajib berupa integer >= 0.';
+        // }
+        // if ($stock === null || $stock === '' || filter_var($stock, FILTER_VALIDATE_INT) === false || (int) $stock < 0) {
+        //     $errors['stock'] = 'Stock wajib berupa integer >= 0.';
+        // }
+
+        // if ($errors !== []) {
+        //     $response->getBody()->write(json_encode(['errors' => $errors], JSON_PRETTY_PRINT));
+        //     return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
+        // }
+
+        $product = new Product($name, (int) $price, (int) $stock);
+        $this->em->persist($product);
+        $this->em->flush();
+
+        $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
+        return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
+    }
+
+    public function update(Request $request, Response $response, array $args): Response
+    {
+        $product = $this->em->find(Product::class, (int) $args['id']);
+
+        if (!$product) {
+            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $data = $request->getParsedBody() ?? [];
+
+        if (isset($data['name'])) {
+            $product->setName($data['name']);
+        }
+        if (isset($data['price'])) {
+            $product->setPrice((int) $data['price']);
+        }
+        if (isset($data['stock'])) {
+            $product->setStock((int) $data['stock']);
+        }
+
+        $this->em->flush();
+
+        $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    public function delete(Request $request, Response $response, array $args): Response
+    {
+        $product = $this->em->find(Product::class, (int) $args['id']);
+
+        if (!$product) {
+            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $this->em->remove($product);
+        $this->em->flush();
+
+        $response->getBody()->write(json_encode(['message' => 'Produk berhasil dihapus', 'id' => (int) $args['id']], JSON_PRETTY_PRINT));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
 }

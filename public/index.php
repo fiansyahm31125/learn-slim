@@ -24,6 +24,9 @@ AppFactory::setContainer($container);
 
 $app = AppFactory::create();
 
+// Wajib agar $request->getParsedBody() terisi untuk JSON & form
+$app->addBodyParsingMiddleware();
+
 // Create Twig
 $twig = Twig::create(__DIR__ . '/../templates', ['cache' => false]);
 
@@ -52,10 +55,16 @@ $app->get('/', function ($request, $response) {
 
 $app->get('/products', [ProductController::class, 'index']);
 
+$app->post('/products-create', [ProductController::class, 'create']);
+
 // Contoh Doctrine ORM: 1 produk by id (JSON)
 $app->get('/products/{id}', [ProductController::class, 'show']);
 
 // Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
 $app->get('/products-page', [ProductController::class, 'page']);
+
+$app->delete('/products/{id}', [ProductController::class, 'delete']);
+
+$app->put('/products/{id}', [ProductController::class, 'update']);
 
 $app->run();

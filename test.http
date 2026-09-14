@@ -1,0 +1,76 @@
+@baseUrl = http://localhost:8000
+
+### GET semua produk (JSON)
+GET {{baseUrl}}/products
+Accept: application/json
+
+### GET satu produk by id
+GET {{baseUrl}}/products/1
+Accept: application/json
+
+### GET satu produk yang tidak ada (contoh 404)
+GET {{baseUrl}}/products/9999
+Accept: application/json
+
+### POST produk baru (JSON) -> 201
+POST {{baseUrl}}/products-create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Indomie Kuah",
+  "price": 3501,
+  "stock": 101
+}
+
+### POST produk baru (form) -> 201
+POST {{baseUrl}}/products-create
+Content-Type: application/x-www-form-urlencoded
+Accept: application/json
+
+name=Teh+Botol&price=5000&stock=50
+
+### POST produk tidak valid (contoh 422)
+POST {{baseUrl}}/products-create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+### GET halaman HTML produk (Twig)
+GET {{baseUrl}}/products-page
+Accept: text/html
+
+### PUT update produk by id (JSON)
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Arabika 200g",
+  "price": 50000,
+  "stock": 10
+}
+
+### PUT update produk yang tidak ada (contoh 404)
+PUT {{baseUrl}}/products/9999
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Tidak Ada",
+  "price": 1000,
+  "stock": 10
+}
+
+### DELETE produk by id
+DELETE {{baseUrl}}/products/1
+Accept: application/json
+
+### DELETE produk yang tidak ada (contoh 404)
+DELETE {{baseUrl}}/products/9999
+Accept: application/json
