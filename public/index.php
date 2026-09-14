@@ -6,6 +6,7 @@ use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use DI\Container;
+use App\Controller\ProductController;
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../config/doctrine.php';
@@ -37,43 +38,13 @@ $app->get('/', function ($request, $response) {
     ]);
 });
 
-// Contoh Doctrine ORM sederhana: daftar semua produk (JSON)
-$app->get('/products', function (Request $request, Response $response) {
-    /** @var Doctrine\ORM\EntityManager $em */
-    $em = $this->get(Doctrine\ORM\EntityManager::class);
-    $products = $em->getRepository(App\Entity\Product::class)->findAll();
-
-    $data = array_map(fn(App\Entity\Product $p) => $p->toArray(), $products);
-
-    $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
-    return $response->withHeader('Content-Type', 'application/json');
-});
+// Route produk dipindah ke ProductController (src/Controller/ProductController.php)
+$app->get('/products', [ProductController::class, 'index']);
 
 // Contoh Doctrine ORM: 1 produk by id (JSON)
-$app->get('/products/{id}', function (Request $request, Response $response, array $args) {
-    /** @var Doctrine\ORM\EntityManager $em */
-    $em = $this->get(Doctrine\ORM\EntityManager::class);
-    $product = $em->find(App\Entity\Product::class, (int) $args['id']);
-
-    if (!$product) {
-        $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
-        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
-    }
-
-    $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
-    return $response->withHeader('Content-Type', 'application/json');
-});
+$app->get('/products/{id}', [ProductController::class, 'show']);
 
 // Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
-$app->get('/products-page', function ($request, $response) {
-    /** @var Doctrine\ORM\EntityManager $em */
-    $em = $this->get(Doctrine\ORM\EntityManager::class);
-    $products = $em->getRepository(App\Entity\Product::class)->findAll();
-
-    $view = Twig::fromRequest($request);
-    return $view->render($response, 'products.html.twig', [
-        'products' => array_map(fn(App\Entity\Product $p) => $p->toArray(), $products),
-    ]);
-});
+$app->get('/products-page', [ProductController::class, 'page']);
 
 $app->run();
