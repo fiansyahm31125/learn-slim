@@ -5,8 +5,21 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
+use DI\Container;
 
 require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../config/doctrine.php';
+
+// Create Container using PHP-DI
+$container = new Container();
+
+// Daftarkan Doctrine EntityManager di container
+$container->set(Doctrine\ORM\EntityManager::class, function () {
+    return getEntityManager();
+});
+
+// Set container to create App with on AppFactory
+AppFactory::setContainer($container);
 
 $app = AppFactory::create();
 
@@ -21,6 +34,45 @@ $app->get('/', function ($request, $response) {
 
     return $view->render($response, 'home.html.twig', [
         'name' => 'John',
+    ]);
+});
+
+// Contoh Doctrine ORM sederhana: daftar semua produk (JSON)
+$app->get('/products', function (Request $request, Response $response) {
+    /** @var Doctrine\ORM\EntityManager $em */
+    $em = $this->get(Doctrine\ORM\EntityManager::class);
+    $products = $em->getRepository(App\Entity\Product::class)->findAll();
+
+    $data = array_map(fn(App\Entity\Product $p) => $p->toArray(), $products);
+
+    $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// Contoh Doctrine ORM: 1 produk by id (JSON)
+$app->get('/products/{id}', function (Request $request, Response $response, array $args) {
+    /** @var Doctrine\ORM\EntityManager $em */
+    $em = $this->get(Doctrine\ORM\EntityManager::class);
+    $product = $em->find(App\Entity\Product::class, (int) $args['id']);
+
+    if (!$product) {
+        $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
+        return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+    }
+
+    $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
+    return $response->withHeader('Content-Type', 'application/json');
+});
+
+// Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
+$app->get('/products-page', function ($request, $response) {
+    /** @var Doctrine\ORM\EntityManager $em */
+    $em = $this->get(Doctrine\ORM\EntityManager::class);
+    $products = $em->getRepository(App\Entity\Product::class)->findAll();
+
+    $view = Twig::fromRequest($request);
+    return $view->render($response, 'products.html.twig', [
+        'products' => array_map(fn(App\Entity\Product $p) => $p->toArray(), $products),
     ]);
 });
 

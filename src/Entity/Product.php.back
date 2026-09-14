@@ -1,0 +1,65 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[ORM\Table(name: 'products')]
+class Product
+{
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column(type: 'integer')]
+    private ?int $id = null;
+
+    #[ORM\Column(type: 'string', length: 100)]
+    private string $name;
+
+    // Harga dalam rupiah, simpan sebagai integer agar sederhana
+    #[ORM\Column(type: 'integer')]
+    private int $price;
+
+    #[ORM\Column(type: 'integer')]
+    private int $stock;
+
+    public function __construct(string $name, int $price, int $stock)
+    {
+        $this->name = $name;
+        $this->price = $price;
+        $this->stock = $stock;
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function getPrice(): int
+    {
+        return $this->price;
+    }
+
+    public function getStock(): int
+    {
+        return $this->stock;
+    }
+
+    /** Helper agar mudah di-json-kan / di-render Twig */
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'price' => $this->price,
+            'stock' => $this->stock,
+        ];
+    }
+}
