@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Error {{ status|default(500) }}</title>
+</head>
+<body>
+<h1>Error {{ status|default(500) }}</h1>
+<p>{{ message|default('Terjadi kesalahan.') }}</p>
+</body>
+</html>

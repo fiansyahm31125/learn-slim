@@ -1,11 +1,14 @@
 <?php
 
+use App\Helper\AppError;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Psr7\Response;
+
+require __DIR__ . '/../helper/apperror.php';
 
 class AuthMiddleware implements MiddlewareInterface
 {
@@ -26,7 +29,10 @@ class AuthMiddleware implements MiddlewareInterface
 
         $params = $request->getQueryParams();
         if (!array_key_exists('token', $params) || $params['token'] === '') {
-            return $this->jsonError('Unauthorized', 401);
+            // return $this->jsonError('Unauthorized', 401);
+            // $response = new AppError();
+            // return $response->process('Unauthorized', 401, $request);
+            return AppError::make('Unauthorized', 401, $request);
         }
 
         if (!hash_equals($validToken, (string) $params['token'])) {
