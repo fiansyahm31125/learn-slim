@@ -37,6 +37,19 @@ class ProductController
         return $response->withHeader('Content-Type', 'application/json');
     }
 
+    public function detail(Request $request, Response $response, string $id)
+    {
+        $product = $this->em->find(Product::class, (int) $id);
+
+        if (!$product) {
+            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
+            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+        }
+
+        $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
     public function page($request, $response)
     {
         $products = $this->em->getRepository(Product::class)->findAll();

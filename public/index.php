@@ -7,6 +7,8 @@ use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use DI\Container;
 use App\Controller\ProductController;
+use App\Controller\CallbackController;
+use Slim\Handlers\Strategies\RequestResponseArgs;
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../config/doctrine.php';
@@ -24,13 +26,26 @@ AppFactory::setContainer($container);
 
 $app = AppFactory::create();
 
-// Wajib agar $request->getParsedBody() terisi untuk JSON & form
+// RequestResponseArgs code, membuat  Route strategies mati
+// $routeCollector = $app->getRouteCollector();
+// $routeCollector->setDefaultInvocationStrategy(
+//     new RequestResponseArgs()
+// );
+
+$app->addRoutingMiddleware();
+
+$routeParser = $app->getRouteCollector()->getRouteParser();
+
+$displayErrorDetails = true;
+$logErrors = true;
+$logErrorDetails = true;
+
+$errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
+
 $app->addBodyParsingMiddleware();
 
-// Create Twig
 $twig = Twig::create(__DIR__ . '/../templates', ['cache' => false]);
 
-// Add Twig-View Middleware
 $app->add(TwigMiddleware::create($app, $twig));
 
 $app->get('/', function ($request, $response) {
@@ -58,13 +73,23 @@ $app->get('/products', [ProductController::class, 'index']);
 $app->post('/products-create', [ProductController::class, 'create']);
 
 // Contoh Doctrine ORM: 1 produk by id (JSON)
-$app->get('/products/{id}', [ProductController::class, 'show']);
+// Route strategies
+$app->get('/products/show/{id}', [ProductController::class, 'show']);
+// RequestResponseArgs
+$app->get('/products/detail/{id}', [ProductController::class, 'detail']);
 
 // Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
-$app->get('/products-page', [ProductController::class, 'page']);
+// Route names
+$app->get('/products-page', [ProductController::class, 'page'])->setName('productpage');
+$app->redirect('/halaman-product', $routeParser->urlFor('productpage'));
 
 $app->delete('/products/{id}', [ProductController::class, 'delete']);
 
 $app->put('/products/{id}', [ProductController::class, 'update']);
+
+$app->get('/callbackbinding/{name}', [CallbackController::class, 'closureBinding']);
+
+// Redirect helper
+$app->redirect('/items', '/products', 301);
 
 $app->run();
