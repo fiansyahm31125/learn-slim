@@ -20,6 +20,7 @@ Dotenv::createImmutable(__DIR__ . '/../')->safeLoad();
 
 require __DIR__ . '/../config/doctrine.php';
 require __DIR__ . '/../config/middleware.php';
+require __DIR__ . '/../config/middlewarePost.php';
 
 // Create Container using PHP-DI
 $container = new Container();
@@ -76,9 +77,9 @@ $app->get('/', function ($request, $response) {
 //     $response->withHeader('Content-Type', 'application/json');
 // });
 
-$app->get('/products', [ProductController::class, 'index'])->add(new AuthMiddleware());
+$app->get('/products', [ProductController::class, 'index'])->add(new AuthMiddleware($app->getResponseFactory()));
 
-$app->post('/products-create', [ProductController::class, 'create']);
+$app->post('/products-create', [ProductController::class, 'create'])->add(new PostMiddleware($app->getResponseFactory()));
 
 // Contoh Doctrine ORM: 1 produk by id (JSON)
 // Route strategies

@@ -7,7 +7,7 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Psr7\Response;
 
-class AuthMiddleware implements MiddlewareInterface
+class PostMiddleware implements MiddlewareInterface
 {
     private ResponseFactoryInterface $responseFactory;
 
@@ -24,12 +24,18 @@ class AuthMiddleware implements MiddlewareInterface
             return $this->jsonError('AUTH_TOKEN belum dikonfigurasi di .env', 500);
         }
 
-        $params = $request->getQueryParams();
-        if (!array_key_exists('token', $params) || $params['token'] === '') {
+        $token = '';
+
+        $authorization = $request->getHeaderLine('Authorization');
+        if (str_starts_with($authorization, 'Bearer ')) {
+            $token = substr($authorization, 7);
+        }
+
+        if ($token === '') {
             return $this->jsonError('Unauthorized', 401);
         }
 
-        if (!hash_equals($validToken, (string) $params['token'])) {
+        if (!hash_equals($validToken, (string) $token)) {
             // return $this->jsonError('Forbidden', 403);
             return $this->forbidden();
         }
