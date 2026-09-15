@@ -2,9 +2,39 @@
 <html>
 <head>
     <title>Daftar Produk</title>
+    <style>
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            min-width: 320px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .modal-box h2 { margin-top: 0; }
+        .form-row { margin-bottom: 10px; }
+        .form-row label { display: block; margin-bottom: 4px; }
+        .form-row input { width: 100%; padding: 6px; box-sizing: border-box; }
+        .modal-actions { text-align: right; margin-top: 15px; }
+        .modal-actions button { margin-left: 8px; padding: 6px 14px; }
+    </style>
 </head>
 <body>
 <h1>Daftar Produk ({{ products|length }})</h1>
+
+<button type="button" onclick="openAddModal()">+ Add Produk</button>
+<br><br>
+
 <table border="1" cellpadding="8">
     <tr>
         <th>ID</th><th>Nama</th><th>Harga</th><th>Stok</th><th>Actions</th>
@@ -18,18 +48,105 @@
         <td>
             <button
                 type="button"
+                data-id="{{ p.id }}"
+                data-name="{{ p.name|e('html_attr') }}"
+                data-price="{{ p.price }}"
+                data-stock="{{ p.stock }}"
+                onclick="openEditModal(this)">
+                Edit
+            </button>
+            <button
+                type="button"
                 onclick="deleteProduct({{ p.id }})">
                 Delete
             </button>
         </td>
     </tr>
     {% else %}
-    <tr><td colspan="4">Belum ada data. Jalankan: php scripts/create-schema.php && php scripts/seed.php</td></tr>
+    <tr><td colspan="5">Belum ada data. Jalankan: php scripts/create-schema.php && php scripts/seed.php</td></tr>
     {% endfor %}
 </table>
 
+<div id="productModal" class="modal-overlay" onclick="if (event.target === this) closeModal()">
+    <div class="modal-box">
+        <h2 id="modalTitle">Add Produk</h2>
+        <form id="productForm" onsubmit="submitProduct(event)">
+            <input type="hidden" id="productId" value="">
+            <div class="form-row">
+                <label for="productName">Nama</label>
+                <input type="text" id="productName" name="name" required>
+            </div>
+            <div class="form-row">
+                <label for="productPrice">Harga</label>
+                <input type="number" id="productPrice" name="price" min="0" step="1" required>
+            </div>
+            <div class="form-row">
+                <label for="productStock">Stok</label>
+                <input type="number" id="productStock" name="stock" min="0" step="1" required>
+            </div>
+            <div class="modal-actions">
+                <button type="button" onclick="closeModal()">Batal</button>
+                <button type="submit" id="modalSubmitBtn">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
+function openAddModal() {
+    document.getElementById('modalTitle').textContent = 'Add Produk';
+    document.getElementById('modalSubmitBtn').textContent = 'Tambah';
+    document.getElementById('productId').value = '';
+    document.getElementById('productForm').reset();
+    document.getElementById('productModal').classList.add('show');
+}
+
+function openEditModal(btn) {
+    document.getElementById('modalTitle').textContent = 'Edit Produk #' + btn.dataset.id;
+    document.getElementById('modalSubmitBtn').textContent = 'Update';
+    document.getElementById('productId').value = btn.dataset.id;
+    document.getElementById('productName').value = btn.dataset.name;
+    document.getElementById('productPrice').value = btn.dataset.price;
+    document.getElementById('productStock').value = btn.dataset.stock;
+    document.getElementById('productModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('productModal').classList.remove('show');
+}
+
+function submitProduct(event) {
+    event.preventDefault();
+
+    const id = document.getElementById('productId').value;
+    const payload = {
+        name: document.getElementById('productName').value,
+        price: parseInt(document.getElementById('productPrice').value, 10),
+        stock: parseInt(document.getElementById('productStock').value, 10)
+    };
+
+    const isEdit = id !== '';
+    const url = isEdit ? '/products/' + id : '/products-create';
+    const method = isEdit ? 'PUT' : 'POST';
+
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(response => {
+        if (response.ok) {
+            closeModal();
+            window.location.reload();
+        } else {
+            return response.text().then(t => alert('Gagal menyimpan: ' + t));
+        }
+    })
+    .catch(err => alert('Error: ' + err));
+}
+
 function deleteProduct(id) {
+    if (!confirm('Hapus produk #' + id + '?')) return;
     fetch('/products/' + id, {
         method: 'DELETE'
     })
@@ -39,6 +156,10 @@ function deleteProduct(id) {
         }
     });
 }
+
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeModal();
+});
 </script>
 </body>
 </html>
