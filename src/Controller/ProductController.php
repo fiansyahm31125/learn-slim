@@ -70,6 +70,16 @@ class ProductController
         ]);
     }
 
+    public function crud($request, $response)
+    {
+        $products = $this->em->getRepository(Product::class)->findAll();
+
+        $view = Twig::fromRequest($request);
+        return $view->render($response, 'crud.html.twig', [
+            'products' => array_map(fn(Product $p) => $p->toArray(), $products),
+        ]);
+    }
+
     public function create(Request $request, Response $response): Response
     {
         $data = $request->getParsedBody();

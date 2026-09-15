@@ -90,9 +90,10 @@ $app->get('/products/detail/{id}', [ProductController::class, 'detail']);
 // Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
 // Route names
 $app->get('/products-page', [ProductController::class, 'page'])->setName('productpage');
+$app->get('/products-crud', [ProductController::class, 'crud'])->setName('productcrud');
 $app->redirect('/halaman-product', $routeParser->urlFor('productpage'));
 
-$app->delete('/products/{id}', [ProductController::class, 'delete']);
+$app->delete('/products/{id}', [ProductController::class, 'delete'])->setName('product-delete');
 
 $app->put('/products/{id}', [ProductController::class, 'update']);
 
