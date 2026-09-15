@@ -9,6 +9,7 @@ use DI\Container;
 use App\Controller\ProductController;
 use App\Controller\CallbackController;
 use Slim\Handlers\Strategies\RequestResponseArgs;
+use Slim\Routing\RouteCollectorProxy;
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../config/doctrine.php';
@@ -91,5 +92,25 @@ $app->get('/callbackbinding/{name}', [CallbackController::class, 'closureBinding
 
 // Redirect helper
 $app->redirect('/items', '/products', 301);
+
+// Route groups
+$app->group('/users/{id}', function (RouteCollectorProxy $group) {
+    $group->get('/billing', function ($request, $response, array $args) {
+        $id = (int) $args['id'];
+        $data = [
+            'id' => $id
+        ];
+
+        $response->getBody()->write(
+            json_encode($data, JSON_PRETTY_PRINT)
+        );
+
+        return $response
+            ->withHeader('Content-Type', 'application/json');
+    });
+
+
+    $group->get('/product', [ProductController::class, 'index']);
+});
 
 $app->run();

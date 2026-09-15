@@ -16,9 +16,19 @@ class ProductController
 
     public function __construct(private EntityManager $em) {}
 
-    public function index(Request $request, Response $response)
+    public function index(Request $request, Response $response, array $args)
     {
-        $products = $this->em->getRepository(Product::class)->findAll();
+        $id = $args['id'] ?? null;
+
+        if ($id !== null) {
+            // Ada ID → filter berdasarkan ID
+            $products = $this->em->getRepository(Product::class)->findBy([
+                'id' => (int) $id
+            ]);
+        } else {
+            // Tidak ada ID → ambil semua
+            $products = $this->em->getRepository(Product::class)->findAll();
+        }
         $data = array_map(fn(Product $p) => $p->toArray(), $products);
         $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
