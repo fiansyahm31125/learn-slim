@@ -6,13 +6,20 @@ use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
 use DI\Container;
+use Dotenv\Dotenv;
 use App\Controller\ProductController;
 use App\Controller\CallbackController;
 use Slim\Handlers\Strategies\RequestResponseArgs;
 use Slim\Routing\RouteCollectorProxy;
 
 require __DIR__ . '/../vendor/autoload.php';
+
+// Load variabel environment dari .env (diabaikan jika file tidak ada,
+// mis. production yang memakai environment variable asli)
+Dotenv::createImmutable(__DIR__ . '/../')->safeLoad();
+
 require __DIR__ . '/../config/doctrine.php';
+require __DIR__ . '/../config/middleware.php';
 
 // Create Container using PHP-DI
 $container = new Container();
@@ -69,7 +76,7 @@ $app->get('/', function ($request, $response) {
 //     $response->withHeader('Content-Type', 'application/json');
 // });
 
-$app->get('/products', [ProductController::class, 'index']);
+$app->get('/products', [ProductController::class, 'index'])->add(new AuthMiddleware());
 
 $app->post('/products-create', [ProductController::class, 'create']);
 

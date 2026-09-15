@@ -3,3 +3,5 @@
 /var/
 *.sqlite
 *.sqlite-journal
+# Secret lokal, jangan di-commit
+.env

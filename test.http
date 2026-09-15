@@ -1,7 +1,13 @@
 @baseUrl = http://localhost:8000
+# Isi dengan AUTH_TOKEN dari file .env (jangan commit token asli)
+@token = isi-dengan-AUTH_TOKEN-dari-.env
 
-### GET semua produk (JSON)
+### GET semua produk tanpa token (harap 401)
 GET {{baseUrl}}/products
+Accept: application/json
+
+### GET semua produk dengan token valid (JSON)
+GET {{baseUrl}}/products?token={{token}}
 Accept: application/json
 
 ### GET satu produk by id
