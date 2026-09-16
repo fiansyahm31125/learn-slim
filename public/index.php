@@ -87,7 +87,7 @@ $app->post('/products-create', [ProductController::class, 'create']);
 // Route strategies
 $app->get('/products/show/{id}', [ProductController::class, 'show']);
 // RequestResponseArgs
-$app->get('/products/detail/{id}', [ProductController::class, 'detail']);
+// $app->get('/products/detail/{id}', [ProductController::class, 'detail']);
 
 // Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
 // Route names
