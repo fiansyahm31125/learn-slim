@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/../vendor/autoload.php';
-require __DIR__ . '/../config/doctrine.php';
+require __DIR__ . '/../config/database.php';
 
 use App\Entity\Product;
 
@@ -25,3 +25,5 @@ $em->flush();
 
 $total = count($em->getRepository(Product::class)->findAll());
 echo "Seed selesai. Total produk di DB: {$total}\n";
+
+// php seeder/seed.php

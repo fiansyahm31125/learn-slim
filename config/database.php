@@ -14,8 +14,13 @@ function getEntityManager(): EntityManager
     );
     // configuring the database connection
     $connection = DriverManager::getConnection([
-        'driver' => 'pdo_sqlite',
-        'path' => __DIR__ . '/../var/database.sqlite',
+        'driver'   => 'pdo_mysql',
+        'host'     => '127.0.0.1',
+        'port'     => 3308,
+        'dbname'   => 'learn_slim',
+        'user'     => 'root',
+        'password' => '',
+        'charset'  => 'utf8mb4'
     ], $config);
     // obtaining the entity manager
     $entityManager = new EntityManager($connection, $config);
