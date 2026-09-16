@@ -77,32 +77,64 @@ $app->get('/', function ($request, $response) {
 //     $response->withHeader('Content-Type', 'application/json');
 // });
 
-$app->get('/products', [ProductController::class, 'index']);
-// ->add(new AuthMiddleware($app->getResponseFactory()));
+$app->group('/products', function (RouteCollectorProxy $group) {
 
-$app->post('/products-create', [ProductController::class, 'create']);
-// ->add(new PostMiddleware($app->getResponseFactory()));
+    // GET /products
+    $group->get('', [
+        ProductController::class,
+        'index'
+    ]);
 
-// Contoh Doctrine ORM: 1 produk by id (JSON)
-// Route strategies
-$app->get('/products/show/{id}', [ProductController::class, 'show']);
-// RequestResponseArgs
-// $app->get('/products/detail/{id}', [ProductController::class, 'detail']);
+    // POST /products/create
+    $group->post('/create', [
+        ProductController::class,
+        'create'
+    ]);
 
-// Contoh Doctrine ORM: tampilkan produk via Twig (HTML)
-// Route names
-$app->get('/products-page', [ProductController::class, 'page'])->setName('productpage');
-$app->get('/products-crud', [ProductController::class, 'crud'])->setName('productcrud');
-$app->redirect('/halaman-product', $routeParser->urlFor('productpage'));
+    // GET /products/show/1
+    $group->get('/show/{id}', [
+        ProductController::class,
+        'show'
+    ]);
 
-$app->delete('/products/{id}', [ProductController::class, 'delete'])->setName('product-delete');
+    // GET /products/page
+    $group->get('/page', [
+        ProductController::class,
+        'page'
+    ])->setName('productpage');
 
-$app->put('/products/{id}', [ProductController::class, 'update']);
+    // GET /products/crud
+    $group->get('/crud', [
+        ProductController::class,
+        'crud'
+    ])->setName('productcrud');
+
+    // DELETE /products/1
+    $group->delete('/{id}', [
+        ProductController::class,
+        'delete'
+    ])->setName('product-delete');
+
+    // PUT /products/1
+    $group->put('/{id}', [
+        ProductController::class,
+        'update'
+    ]);
+})->add(
+    new AuthMiddleware(
+        $app->getResponseFactory()
+    )
+);
+
+
 
 $app->get('/callbackbinding/{name}', [CallbackController::class, 'closureBinding']);
 
 // Redirect helper
 $app->redirect('/items', '/products', 301);
+
+
+
 
 // Route groups
 $app->group('/users/{id}', function (RouteCollectorProxy $group) {
