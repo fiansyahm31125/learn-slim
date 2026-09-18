@@ -11,6 +11,7 @@ use App\Controller\ProductController;
 use App\Controller\CallbackController;
 use App\Controller\McpController;
 use App\Middleware\RequestLoggingMiddleware;
+use App\Middleware\CorsMiddleware;
 use App\Support\AppLogger;
 use Slim\Handlers\Strategies\RequestResponseArgs;
 use Slim\Routing\RouteCollectorProxy;
@@ -24,6 +25,7 @@ Dotenv::createImmutable(__DIR__ . '/../')->safeLoad();
 
 require __DIR__ . '/../config/database.php';
 require __DIR__ . '/../config/logging.php';
+require __DIR__ . '/../config/cors.php';
 require __DIR__ . '/../config/middleware.php';
 require __DIR__ . '/../config/middlewarePost.php';
 require __DIR__ . '/../config/errorHandler.php';
@@ -61,6 +63,11 @@ $logErrorDetails = true;
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
 
 attachErrorHandler($app, $errorMiddleware);
+
+// CORS untuk akses dari frontend/domain lain. Dipasang SEBELUM RequestLogging
+// agar error response (dari ErrorMiddleware, inner) melewati CORS lalu tercatat log.
+// Preflight OPTIONS di-short-circuit 204 di middleware tanpa menyentuh route.
+$app->add(new CorsMiddleware(getCorsConfig()));
 
 // Aktivitas tiap request -> var/log/app-YYYY-MM-DD.log (outermost agar status tercatat).
 $app->add(new RequestLoggingMiddleware($logger, shouldLogRequests()));

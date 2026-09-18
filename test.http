@@ -691,3 +691,62 @@ Accept: application/json
 ### L05 aktivitas HTML page (200) -> cek baris "GET /products/page -> 200" di log
 GET {{baseUrl}}/products/page
 Accept: text/html
+
+############################################################
+### R1 CORS (config/cors.php + src/Middleware/CorsMiddleware.php)
+### Default .env.example: CORS_ALLOWED_ORIGINS=* (tanpa credentials)
+### Cek header response: Access-Control-Allow-Origin, Vary: Origin
+### Error response (404/422/500) ikut membawa header CORS via AppError.
+############################################################
+
+### R01 Preflight OPTIONS produk -> 204 + header CORS (tanpa menyentuh route)
+OPTIONS {{baseUrl}}/products
+Origin: http://localhost:3000
+Access-Control-Request-Method: GET
+Access-Control-Request-Headers: Content-Type,Authorization
+Accept: */*
+
+### R02 Preflight OPTIONS create (POST) -> 204 + Allow-Methods memuat POST
+OPTIONS {{baseUrl}}/products/create
+Origin: http://localhost:3000
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: Content-Type
+Accept: */*
+
+### R03 GET aktual dengan Origin -> 200 + Access-Control-Allow-Origin: *
+GET {{baseUrl}}/products
+Origin: http://localhost:3000
+Accept: application/json
+
+### R04 POST aktual dengan Origin -> 201 + header CORS
+POST {{baseUrl}}/products/create
+Origin: http://localhost:3000
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Produk CORS",
+  "price": 1000,
+  "stock": 5
+}
+
+### R05 Error 404 tetap bawa header CORS (frontend bisa baca body)
+GET {{baseUrl}}/products/show/9999
+Origin: http://localhost:3000
+Accept: application/json
+
+### R06 Error 422 tetap bawa header CORS
+POST {{baseUrl}}/products/create
+Origin: http://localhost:3000
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+### R07 Tanpa Origin (bukan CORS, mis. curl) -> response normal TANPA header CORS
+GET {{baseUrl}}/products
+Accept: application/json

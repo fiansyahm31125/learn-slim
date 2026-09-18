@@ -77,21 +77,33 @@ class AppError
 
         // Content negotiation: browser (Accept: text/html) dapat halaman Twig,
         // API client (Accept: application/json) dapat JSON. Default: JSON.
+        // Kedua cabang ditempel header CORS agar frontend domain lain tetap
+        // bisa membaca body error (config/cors.php; guarded bila belum di-require).
         if (self::wantsHtml($request)) {
             try {
                 $view = Twig::fromRequest($request);
                 $response ??= new SlimResponse();
                 // Hanya kirim message+status yang aman ke template.
-                return $view->render($response->withStatus($status), 'error.html.twig', [
+                $html = $view->render($response->withStatus($status), 'error.html.twig', [
                     'message' => $safeMessage,
                     'status' => $status,
                 ]);
+                if (function_exists('addCorsHeaders')) {
+                    $html = addCorsHeaders($html, $request);
+                }
+
+                return $html;
             } catch (\Throwable) {
                 // Fall through ke JSON di bawah.
             }
         }
 
-        return self::json($safeMessage, $status, $errors, $response);
+        $json = self::json($safeMessage, $status, $errors, $response);
+        if (function_exists('addCorsHeaders')) {
+            $json = addCorsHeaders($json, $request);
+        }
+
+        return $json;
     }
 
     /**
