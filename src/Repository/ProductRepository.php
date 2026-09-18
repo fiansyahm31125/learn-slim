@@ -24,6 +24,25 @@ class ProductRepository
         return  $this->em->getRepository(Product::class)->findAll();
     }
 
+    public function countAll(): int
+    {
+        return $this->em->getRepository(Product::class)->count([]);
+    }
+
+    /**
+     * @return Product[]
+     */
+    public function findPaginated(int $page, int $limit): array
+    {
+        $offset = ($page - 1) * $limit;
+        return $this->em->getRepository(Product::class)->findBy(
+            [],
+            ['id' => 'ASC'],
+            $limit,
+            $offset
+        );
+    }
+
     public function create(string $name, int $price, int $stock): Product
     {
         $product = new Product($name, (int) $price, (int) $stock);

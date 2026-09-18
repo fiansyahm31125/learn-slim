@@ -36,6 +36,27 @@ class ProductService
     }
 
     /**
+     * Ambil produk per halaman + meta pagination.
+     *
+     * @return array{data: array, meta: array{page: int, limit: int, total: int, total_pages: int}}
+     */
+    public function getPaginated(int $page, int $limit): array
+    {
+        $total = $this->pr->countAll();
+        $products = $this->pr->findPaginated($page, $limit);
+
+        return [
+            'data' => array_map(fn(Product $p) => $p->toArray(), $products),
+            'meta' => [
+                'page' => $page,
+                'limit' => $limit,
+                'total' => $total,
+                'total_pages' => $limit > 0 ? (int) ceil($total / $limit) : 0,
+            ],
+        ];
+    }
+
+    /**
      * Add product. Validasi full (name, price, stock wajib).
      *
      * @param array<string, mixed> $data

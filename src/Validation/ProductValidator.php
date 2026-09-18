@@ -59,6 +59,77 @@ class ProductValidator
         return $clean;
     }
 
+    /**
+     * Validasi query pagination ?page=1&limit=10.
+     *
+     * - Kalau page & limit tidak ada -> [null, null] (caller load semua).
+     * - Kalau salah satu ada -> yang hilang pakai default (page=1, limit=10).
+     *
+     * @return array{0: int|null, 1: int|null} [page, limit]
+     * @throws \App\Exception\ValidationException (422 via error handler)
+     */
+    public static function validatePagination(array $query): array
+    {
+        $hasPage = array_key_exists('page', $query) && $query['page'] !== null && $query['page'] !== '';
+        $hasLimit = array_key_exists('limit', $query) && $query['limit'] !== null && $query['limit'] !== '';
+
+        if (!$hasPage && !$hasLimit) {
+            return [null, null];
+        }
+
+        $rawPage = $hasPage ? $query['page'] : 1;
+        $rawLimit = $hasLimit ? $query['limit'] : 10;
+
+        $errors = [];
+        $page = self::validatePage($rawPage, $errors);
+        $limit = self::validateLimit($rawLimit, $errors);
+
+        if (!empty($errors)) {
+            throw new ValidationException($errors);
+        }
+
+        return [$page, $limit];
+    }
+
+    private static function validatePage(mixed $value, array &$errors): ?int
+    {
+        if (!is_numeric($value) || filter_var($value, FILTER_VALIDATE_INT) === false) {
+            if (!is_int($value) && (string) (int) $value !== trim((string) $value)) {
+                $errors['page'][] = 'Page harus berupa bilangan bulat';
+                return null;
+            }
+        }
+
+        $page = (int) $value;
+
+        if ($page < 1) {
+            $errors['page'][] = 'Page minimal 1';
+        }
+
+        return isset($errors['page']) ? null : $page;
+    }
+
+    private static function validateLimit(mixed $value, array &$errors): ?int
+    {
+        if (!is_numeric($value) || filter_var($value, FILTER_VALIDATE_INT) === false) {
+            if (!is_int($value) && (string) (int) $value !== trim((string) $value)) {
+                $errors['limit'][] = 'Limit harus berupa bilangan bulat';
+                return null;
+            }
+        }
+
+        $limit = (int) $value;
+
+        if ($limit < 1) {
+            $errors['limit'][] = 'Limit minimal 1';
+        }
+        if ($limit > 100) {
+            $errors['limit'][] = 'Limit maksimal 100';
+        }
+
+        return isset($errors['limit']) ? null : $limit;
+    }
+
     private static function validateName(mixed $value, bool $required, array &$errors): ?string
     {
         if ($value === null || $value === '') {

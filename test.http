@@ -23,6 +23,22 @@ Accept: application/json
 GET {{baseUrl}}/products
 Accept: application/json
 
+### P01a GET produk paginated page 1 limit 10 -> 200 {data, meta}
+GET {{baseUrl}}/products?page=1&limit=10
+Accept: application/json
+
+### P01b GET produk paginated page 2 limit 5 -> 200 {data, meta}
+GET {{baseUrl}}/products?page=2&limit=5
+Accept: application/json
+
+### P01c GET produk page invalid -> 422 {success:false, errors.page}
+GET {{baseUrl}}/products?page=0&limit=10
+Accept: application/json
+
+### P01d GET produk limit over max -> 422 {success:false, errors.limit}
+GET {{baseUrl}}/products?page=1&limit=200
+Accept: application/json
+
 ### P02 GET satu produk ada -> 200 object
 GET {{baseUrl}}/products/show/{{productId}}
 Accept: application/json

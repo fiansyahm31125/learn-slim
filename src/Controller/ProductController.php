@@ -13,6 +13,7 @@ use App\Entity\Product;
 use App\Exception\NotFoundException;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
+use App\Validation\ProductValidator;
 
 class ProductController
 {
@@ -22,7 +23,23 @@ class ProductController
     public function index(Request $request, Response $response, array $args)
     {
         $id = $args['id'] ?? null;
-        $data = $this->ps->getJson($id);
+        if ($id !== null) {
+            $data = $this->ps->getJson($id);
+            $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
+            return $response->withHeader('Content-Type', 'application/json');
+        }
+
+        // ?page=1&limit=10 -> paginated {data, meta}.
+        // Tanpa page & limit -> load semua (array, backward compatible).
+        // ValidationException bubble ke error handler -> 422 bila page/limit invalid.
+        [$page, $limit] = ProductValidator::validatePagination($request->getQueryParams());
+
+        if ($page === null || $limit === null) {
+            $data = $this->ps->getJson(null);
+        } else {
+            $data = $this->ps->getPaginated($page, $limit);
+        }
+
         $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
     }
