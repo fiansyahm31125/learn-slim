@@ -19,6 +19,7 @@ class AuthMiddleware implements MiddlewareInterface
         $this->responseFactory = $responseFactory;
     }
 
+    // ResponseInterface adalah kode yang mengikuti psr-17 yang sudah ada di library yang dipanggil oleh slim
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $validToken = $_ENV['AUTH_TOKEN'] ?? $_SERVER['AUTH_TOKEN'] ?? getenv('AUTH_TOKEN') ?: '';
