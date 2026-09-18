@@ -10,6 +10,8 @@ use Dotenv\Dotenv;
 use App\Controller\ProductController;
 use App\Controller\CallbackController;
 use App\Controller\McpController;
+use App\Middleware\RequestLoggingMiddleware;
+use App\Support\AppLogger;
 use Slim\Handlers\Strategies\RequestResponseArgs;
 use Slim\Routing\RouteCollectorProxy;
 
@@ -21,9 +23,13 @@ require __DIR__ . '/../vendor/autoload.php';
 Dotenv::createImmutable(__DIR__ . '/../')->safeLoad();
 
 require __DIR__ . '/../config/database.php';
+require __DIR__ . '/../config/logging.php';
 require __DIR__ . '/../config/middleware.php';
 require __DIR__ . '/../config/middlewarePost.php';
 require __DIR__ . '/../config/errorHandler.php';
+
+// Logger file harian (var/log/app-YYYY-MM-DD.log). Harus sebelum middleware.
+$logger = initLogger();
 
 // Create Container using PHP-DI
 $container = new Container();
@@ -55,6 +61,9 @@ $logErrorDetails = true;
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
 
 attachErrorHandler($app, $errorMiddleware);
+
+// Aktivitas tiap request -> var/log/app-YYYY-MM-DD.log (outermost agar status tercatat).
+$app->add(new RequestLoggingMiddleware($logger, shouldLogRequests()));
 
 $app->addBodyParsingMiddleware();
 

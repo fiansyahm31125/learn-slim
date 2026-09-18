@@ -6,6 +6,7 @@ namespace App\Helper;
 
 use App\Exception\HttpException;
 use App\Exception\ValidationException;
+use App\Support\AppLogger;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Slim\Psr7\Response as SlimResponse;
@@ -25,7 +26,7 @@ if (class_exists(AppError::class, false)) {
  *   atau HTML via error.html.twig (hanya message+status yang aman).
  * - TIDAK PERNAH membocorkan: stack trace, path file, DSN, SQL, token, detail PDO/Doctrine
  *   kecuali APP_DEBUG=true (itu pun hanya `type` + pesan aman, tanpa trace).
- * - Detail internal hanya masuk ke server log via error_log().
+ * - Detail internal hanya masuk ke file log via AppLogger (var/log/app-YYYY-MM-DD.log).
  *
  * Bisa dipakai 4 cara (backward-compat):
  *   (new AppError())->process('Pesan', 400);
@@ -155,21 +156,30 @@ class AppError
 
     private static function log(ServerRequestInterface $request, \Throwable $e, int $status): void
     {
-        // Server-side only: boleh detail lengkap. Tidak pernah dikirim ke klien.
-        $method = $request->getMethod();
-        $uri = (string) $request->getUri();
-        // Buang query `token=` dari log agar token tidak tersimpan di log file.
-        $uri = (string) preg_replace('/([?&])token=[^&]*/i', '$1token=***', $uri);
-        error_log(sprintf(
-            '[%s] %s %s -> %s: %s in %s:%d',
-            date('c'),
-            $method,
-            $uri,
-            $e::class,
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine()
-        ));
+        // Detail lengkap hanya ke file log (var/log/app-YYYY-MM-DD.log).
+        // Tidak pernah dikirim ke klien. URI/query token disamarkan di AppLogger.
+        try {
+            AppLogger::get()->logException(
+                $request->getMethod(),
+                (string) $request->getUri(),
+                $e,
+                $status
+            );
+        } catch (\Throwable) {
+            // Fallback bila logger belum terinisialisasi / disk penuh.
+            $method = $request->getMethod();
+            $uri = (string) preg_replace('/([?&])token=[^&]*/i', '$1token=***', (string) $request->getUri());
+            error_log(sprintf(
+                '[%s] %s %s -> %s: %s in %s:%d',
+                date('c'),
+                $method,
+                $uri,
+                $e::class,
+                $e->getMessage(),
+                $e->getFile(),
+                $e->getLine()
+            ));
+        }
     }
 
     private static function wantsHtml(ServerRequestInterface $request): bool

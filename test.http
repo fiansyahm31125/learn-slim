@@ -648,8 +648,46 @@ Accept: application/json
   "params": {}
 }
 
+### M06 body bukan JSON -> 200 error.code -32700 Parse error
 POST {{baseUrl}}/mcp
 Content-Type: application/json
 Accept: application/json
 
 bukan-json
+
+############################################################
+### L1 Logging (config/logging.php + src/Support/AppLogger.php
+### + src/Middleware/RequestLoggingMiddleware.php)
+### File: var/log/app-YYYY-MM-DD.log (gitignored, rotasi harian)
+### Setiap request di bawah menulis 1 baris aktivitas (level otomatis:
+### 2xx/3xx=INFO, 4xx=WARNING, 5xx=ERROR) + error menulis detail server-side.
+### Cara cek: Get-Content var/log/app-$(Get-Date -Format yyyy-MM-dd).log -Tail 20
+### Token/password di log selalu *** (lihat L04).
+############################################################
+
+### L01 aktivitas INFO (2xx) -> cek baris "GET / -> 200" di log
+GET {{baseUrl}}/
+Accept: */*
+
+### L02 aktivitas WARNING (404) -> cek baris "GET /products/show/9999 -> 404" di log
+GET {{baseUrl}}/products/show/9999
+Accept: application/json
+
+### L03 error + WARNING (422) -> cek baris validasi + context.errors di log
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+### L04 redaksi sensitif -> di log harus "token=***", BUKAN token asli
+GET {{baseUrl}}/products?token=rahasia-jangan-bocor
+Accept: application/json
+
+### L05 aktivitas HTML page (200) -> cek baris "GET /products/page -> 200" di log
+GET {{baseUrl}}/products/page
+Accept: text/html
