@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Product;
 use App\Repository\ProductRepository;
+use App\Validation\ProductValidator;
 
 class ProductService
 {
@@ -34,25 +35,39 @@ class ProductService
         return  $this->pr->findAll();
     }
 
-    public function create(string $name, int $price, int $stock)
+    /**
+     * Add product. Validasi full (name, price, stock wajib).
+     *
+     * @param array<string, mixed> $data
+     * @throws \App\Exception\ValidationException
+     */
+    public function create(array $data): Product
     {
-        return $this->pr->create($name, (int) $price, (int) $stock);
+        $clean = ProductValidator::validateForCreate($data);
+        return $this->pr->create($clean['name'], $clean['price'], $clean['stock']);
     }
 
+    /**
+     * Edit product. Validasi partial (hanya field yang dikirim).
+     *
+     * @param array<string, mixed> $data
+     * @throws \App\Exception\ValidationException
+     */
     public function update($id, $data): ?Product
     {
         $product = $this->pr->find($id);
         if (!$product) {
             return null;
         }
-        if (isset($data['name'])) {
-            $product->setName($data['name']);
+        $clean = ProductValidator::validateForUpdate((array) $data);
+        if (isset($clean['name'])) {
+            $product->setName($clean['name']);
         }
-        if (isset($data['price'])) {
-            $product->setPrice((int) $data['price']);
+        if (isset($clean['price'])) {
+            $product->setPrice($clean['price']);
         }
-        if (isset($data['stock'])) {
-            $product->setStock((int) $data['stock']);
+        if (isset($clean['stock'])) {
+            $product->setStock($clean['stock']);
         }
         $this->pr->save($product);
         return $product;

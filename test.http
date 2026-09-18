@@ -81,3 +81,391 @@ Accept: application/json
 ### DELETE produk yang tidak ada (contoh 404)
 DELETE {{baseUrl}}/products/9999
 Accept: application/json
+
+
+### PSR7-Example changing request
+POST {{baseUrl}}/foo
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+############################################################
+### ProductValidator.php - validateForCreate
+### Route: POST /products/create -> 201 valid, 422 gagal
+### Source: src/Validation/ProductValidator.php::validateForCreate
+############################################################
+
+### C01 CREATE valid -> 201
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Indomie Goreng",
+  "price": 3500,
+  "stock": 100
+}
+
+### C02 CREATE name missing -> 422 Name wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": 3500,
+  "stock": 100
+}
+
+### C03 CREATE name empty string -> 422 Name wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": 3500,
+  "stock": 100
+}
+
+### C04 CREATE name whitespace only -> 422 Name wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "   ",
+  "price": 3500,
+  "stock": 100
+}
+
+### C05 CREATE name terlalu pendek (<3) -> 422 minimal 3 karakter
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "AB",
+  "price": 3500,
+  "stock": 100
+}
+
+### C06 CREATE name terlalu panjang (>255) -> 422 maksimal 255 karakter
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "price": 3500,
+  "stock": 100
+}
+
+### C07 CREATE price missing -> 422 Price wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Tubruk",
+  "stock": 10
+}
+
+### C08 CREATE price string abc -> 422 harus berupa angka
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Tubruk",
+  "price": "abc",
+  "stock": 10
+}
+
+### C09 CREATE price float 10.5 -> 422 harus bilangan bulat
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Tubruk",
+  "price": 10.5,
+  "stock": 10
+}
+
+### C10 CREATE price negatif -> 422 tidak boleh negatif
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Tubruk",
+  "price": -100,
+  "stock": 10
+}
+
+### C11 CREATE price over max (>1M) -> 422 maksimal 1.000.000.000
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Tubruk",
+  "price": 1000000001,
+  "stock": 10
+}
+
+### C12 CREATE stock missing -> 422 Stock wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Teh Manis",
+  "price": 5000
+}
+
+### C13 CREATE stock string abc -> 422 harus berupa angka
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Teh Manis",
+  "price": 5000,
+  "stock": "abc"
+}
+
+### C14 CREATE stock float 5.5 -> 422 harus bilangan bulat
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Teh Manis",
+  "price": 5000,
+  "stock": 5.5
+}
+
+### C15 CREATE stock negatif -> 422 tidak boleh negatif
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Teh Manis",
+  "price": 5000,
+  "stock": -5
+}
+
+### C16 CREATE stock over max -> 422 maksimal 1.000.000.000
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Teh Manis",
+  "price": 5000,
+  "stock": 1000000001
+}
+
+### C17 CREATE body kosong {} -> 422 semua wajib diisi
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+### C18 CREATE price+stock numeric string -> 201 (is_numeric lolos, cast int)
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Gula Pasir",
+  "price": "5000",
+  "stock": "50"
+}
+
+### C19 CREATE boundary min: name 3 char, price 0, stock 0 -> 201
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "ABC",
+  "price": 0,
+  "stock": 0
+}
+
+### C20 CREATE boundary max: price 1000000000, stock 1000000000 -> 201
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Beras Premium",
+  "price": 1000000000,
+  "stock": 1000000000
+}
+
+### C21 CREATE semua field invalid -> 422 multi-errors
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+############################################################
+### ProductValidator.php - validateForUpdate
+### Route: PUT /products/{id} -> 200 valid, 422 gagal, 404 tidak ada
+### Source: src/Validation/ProductValidator.php::validateForUpdate
+### Catatan: pakai id yang ada (mis. 1) untuk uji 422;
+### pakai id 9999 untuk uji 404. Service cek find() dulu,
+### jadi 404 didahulukan sebelum validasi.
+############################################################
+
+### U01 UPDATE partial name only (valid) -> 200
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Arabika 200g"
+}
+
+### U02 UPDATE partial price only (valid) -> 200
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": 55000
+}
+
+### U03 UPDATE partial stock only (valid) -> 200
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "stock": 25
+}
+
+### U04 UPDATE full valid -> 200
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Kopi Arabika 200g",
+  "price": 50000,
+  "stock": 10
+}
+
+### U05 UPDATE body kosong {} -> 422 general Setidaknya satu field
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+### U06 UPDATE name kosong -> 422 tidak boleh kosong
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": ""
+}
+
+### U07 UPDATE name terlalu pendek -> 422 minimal 3 karakter
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "AB"
+}
+
+### U08 UPDATE price abc -> 422 harus berupa angka
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": "abc"
+}
+
+### U09 UPDATE price float -> 422 harus bilangan bulat
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": 99.99
+}
+
+### U10 UPDATE price negatif -> 422 tidak boleh negatif
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": -1
+}
+
+### U11 UPDATE price over max -> 422 maksimal 1.000.000.000
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "price": 1000000001
+}
+
+### U12 UPDATE stock abc -> 422 harus berupa angka
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "stock": "abc"
+}
+
+### U13 UPDATE stock negatif -> 422 tidak boleh negatif
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "stock": -10
+}
+
+### U14 UPDATE stock float -> 422 harus bilangan bulat
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "stock": 2.5
+}
+
+### U15 UPDATE id tidak ada -> 404 (validasi dilewati karena find dulu)
+PUT {{baseUrl}}/products/9999
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Tidak Ada",
+  "price": 1000,
+  "stock": 10
+}

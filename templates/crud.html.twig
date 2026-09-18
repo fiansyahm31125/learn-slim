@@ -126,7 +126,7 @@ function submitProduct(event) {
     };
 
     const isEdit = id !== '';
-    const url = isEdit ? '/products/' + id : '/products-create';
+    const url = isEdit ? '/products/' + id : '/products/create';
     const method = isEdit ? 'PUT' : 'POST';
 
     fetch(url, {
@@ -134,12 +134,26 @@ function submitProduct(event) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
     })
-    .then(response => {
+    .then(async response => {
         if (response.ok) {
             closeModal();
             window.location.reload();
         } else {
-            return response.text().then(t => alert('Gagal menyimpan: ' + t));
+            // Tampilkan pesan validasi 422 ({"message":..., "errors":{...}}) agar user paham
+            let msg = 'Gagal menyimpan (HTTP ' + response.status + ')';
+            try {
+                const data = await response.json();
+                if (data.errors) {
+                    msg += '\n' + Object.entries(data.errors)
+                        .map(([field, msgs]) => field + ': ' + [].concat(msgs).join(', '))
+                        .join('\n');
+                } else if (data.message || data.error) {
+                    msg += '\n' + (data.message || data.error);
+                }
+            } catch (_) {
+                msg += '\n' + await response.text();
+            }
+            alert(msg);
         }
     })
     .catch(err => alert('Error: ' + err));

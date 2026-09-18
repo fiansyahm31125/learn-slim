@@ -10,6 +10,7 @@ use Slim\Views\TwigMiddleware;
 use DI\Container;
 use Doctrine\ORM\EntityManager;
 use App\Entity\Product;
+use App\Exception\ValidationException;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
 
@@ -72,13 +73,19 @@ class ProductController
 
     public function create(Request $request, Response $response): Response
     {
-        $data = $request->getParsedBody();
+        $data = $request->getParsedBody() ?? [];
 
-        $name = $data['name'] ?? null;
-        $price = $data['price'] ?? null;
-        $stock = $data['stock'] ?? null;
+        try {
+            // Validasi add product ada di ProductService::create (via ProductValidator::validateForCreate)
+            $product = $this->ps->create((array) $data);
+        } catch (ValidationException $e) {
+            $response->getBody()->write(json_encode([
+                'message' => 'Validasi gagal',
+                'errors' => $e->getErrors(),
+            ], JSON_PRETTY_PRINT));
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
+        }
 
-        $product = $this->ps->create($name, (int) $price, (int) $stock);
         $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
         return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
     }
@@ -87,7 +94,18 @@ class ProductController
     {
         $id = $args['id'];
         $data = $request->getParsedBody() ?? [];
-        $product = $this->ps->update($id, $data);
+
+        try {
+            // Validasi edit product ada di ProductService::update (via ProductValidator::validateForUpdate)
+            $product = $this->ps->update($id, (array) $data);
+        } catch (ValidationException $e) {
+            $response->getBody()->write(json_encode([
+                'message' => 'Validasi gagal',
+                'errors' => $e->getErrors(),
+            ], JSON_PRETTY_PRINT));
+            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
+        }
+
         if (!$product) {
             $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
             return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
