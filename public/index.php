@@ -9,8 +9,10 @@ use DI\Container;
 use Dotenv\Dotenv;
 use App\Controller\ProductController;
 use App\Controller\CallbackController;
+use App\Controller\McpController;
 use Slim\Handlers\Strategies\RequestResponseArgs;
 use Slim\Routing\RouteCollectorProxy;
+
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -57,13 +59,30 @@ $twig = Twig::create(__DIR__ . '/../templates', ['cache' => false]);
 
 $app->add(TwigMiddleware::create($app, $twig));
 
-$app->get('/', function ($request, $response) {
-    $view = Twig::fromRequest($request);
 
-    return $view->render($response, 'home.html.twig', [
-        'name' => 'John',
-    ]);
+$app->post('/mcp', [McpController::class, 'handle']);
+
+
+$app->get('/', function ($request, $response) {
+    $response->getBody()->write('OK');
+
+    return $response
+        ->withHeader('Content-Type', 'text/plain');
 });
+
+$app->post('/', function ($request, $response) {
+    return $response
+        ->withStatus(401)
+        ->withHeader('Content-Type', 'application/json');
+});
+
+// $app->get('/', function ($request, $response) {
+//     $view = Twig::fromRequest($request);
+
+//     return $view->render($response, 'home.html.twig', [
+//         'name' => 'John',
+//     ]);
+// });
 
 // Contoh Doctrine ORM sederhana: daftar semua produk (JSON)
 // $app->get('/products', function (Request $request, Response $response) {
@@ -76,6 +95,11 @@ $app->get('/', function ($request, $response) {
 //     $response->getBody()->write(json_encode($data, JSON_PRETTY_PRINT));
 //     $response->withHeader('Content-Type', 'application/json');
 // });
+
+$app->get('/mcp', [
+    ProductController::class,
+    'index'
+]);
 
 $app->group('/products', function (RouteCollectorProxy $group) {
 
@@ -120,11 +144,12 @@ $app->group('/products', function (RouteCollectorProxy $group) {
         ProductController::class,
         'update'
     ]);
-})->add(
-    new AuthMiddleware(
-        $app->getResponseFactory()
-    )
-);
+});
+// ->add(
+//     new AuthMiddleware(
+//         $app->getResponseFactory()
+//     )
+// );
 
 
 
@@ -154,6 +179,14 @@ $app->group('/users/{id}', function (RouteCollectorProxy $group) {
 
 
     $group->get('/product', [ProductController::class, 'index']);
+});
+
+
+// PSR-7 (Can't change except using special methos )
+$app->get('/foo', function (Request $request, Response $response, array $args) {
+    $payload = json_encode(['hello' => 'world'], JSON_PRETTY_PRINT);
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json');
 });
 
 $app->run();
