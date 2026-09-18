@@ -186,7 +186,7 @@ $app->group('/users/{id}', function (RouteCollectorProxy $group) {
 $app->get('/foo', function (Request $request, Response $response, array $args) {
     $payload = json_encode(['hello' => 'world'], JSON_PRETTY_PRINT);
     $response->getBody()->write($payload);
-    return $response->withHeader('Content-Type', 'application/json');
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
 });
 
 $app->run();
