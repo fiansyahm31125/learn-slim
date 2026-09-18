@@ -189,4 +189,13 @@ $app->get('/foo', function (Request $request, Response $response, array $args) {
     return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
 });
 
+$app->post('/foo', function (Request $request, Response $response, array $args) {
+    $payload = $request->getQueryParams();
+    $response->getBody()->write(
+        json_encode($payload, JSON_PRETTY_PRINT)
+    );
+    return $response
+        ->withHeader('Content-Type', 'application/json');
+});
+
 $app->run();
