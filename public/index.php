@@ -23,6 +23,7 @@ Dotenv::createImmutable(__DIR__ . '/../')->safeLoad();
 require __DIR__ . '/../config/database.php';
 require __DIR__ . '/../config/middleware.php';
 require __DIR__ . '/../config/middlewarePost.php';
+require __DIR__ . '/../config/errorHandler.php';
 
 // Create Container using PHP-DI
 $container = new Container();
@@ -47,11 +48,13 @@ $app->addRoutingMiddleware();
 
 $routeParser = $app->getRouteCollector()->getRouteParser();
 
-$displayErrorDetails = true;
+$displayErrorDetails = in_array(strtolower(trim((string) ($_ENV['APP_DEBUG'] ?? $_SERVER['APP_DEBUG'] ?? getenv('APP_DEBUG') ?: 'false'))), ['1', 'true', 'yes', 'on'], true);
 $logErrors = true;
 $logErrorDetails = true;
 
 $errorMiddleware = $app->addErrorMiddleware($displayErrorDetails, $logErrors, $logErrorDetails);
+
+attachErrorHandler($app, $errorMiddleware);
 
 $app->addBodyParsingMiddleware();
 

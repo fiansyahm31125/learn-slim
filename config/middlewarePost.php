@@ -46,15 +46,16 @@ class PostMiddleware implements MiddlewareInterface
     private function jsonError(string $message, int $status): ResponseInterface
     {
         $response = new Response();
-        $response->getBody()->write(json_encode(['error' => $message]));
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => $message,
+            'status' => $status,
+        ]));
         return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
     }
 
-    private function forbidden()
+    private function forbidden(): ResponseInterface
     {
-        $response = $this->responseFactory->createResponse();
-        $response->getBody()->write('Forbidden Error');
-
-        return $response;
+        return $this->jsonError('Forbidden', 403);
     }
 }

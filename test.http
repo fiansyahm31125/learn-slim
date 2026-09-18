@@ -1,28 +1,40 @@
 @baseUrl = http://localhost:8000
 # Isi dengan AUTH_TOKEN dari file .env (jangan commit token asli)
 @token = 4c7b1c56a7cdcc983779143823309fbe56879f1ba093bfd866151b83082227e1
+@productId = 1
 
-### GET semua produk tanpa token (harap 401)
+############################################################
+### S0 Health & Root
+############################################################
+
+### S01 GET / -> 200 OK (text/plain)
+GET {{baseUrl}}/
+Accept: */*
+
+### S02 POST / -> 401
+POST {{baseUrl}}/
+Accept: application/json
+
+############################################################
+### P1 Product CRUD - happy path (route aktual public/index.php)
+############################################################
+
+### P01 GET semua produk -> 200 array JSON
 GET {{baseUrl}}/products
 Accept: application/json
 
-### GET semua produk dengan token valid (JSON)
-GET {{baseUrl}}/products?token={{token}}
+### P02 GET satu produk ada -> 200 object
+GET {{baseUrl}}/products/show/{{productId}}
 Accept: application/json
 
-### GET satu produk by id
-GET {{baseUrl}}/products/1
+### P03 GET satu produk tidak ada -> 404 {success:false, message, status}
+GET {{baseUrl}}/products/show/9999
 Accept: application/json
 
-### GET satu produk yang tidak ada (contoh 404)
-GET {{baseUrl}}/products/9999
-Accept: application/json
-
-### POST produk baru (JSON) -> 201
-POST {{baseUrl}}/products-create
+### P04 POST produk baru (JSON) -> 201
+POST {{baseUrl}}/products/create
 Content-Type: application/json
 Accept: application/json
-Authorization: Bearer {{token}}
 
 {
   "name": "Indomie Kuah",
@@ -30,15 +42,15 @@ Authorization: Bearer {{token}}
   "stock": 101
 }
 
-### POST produk baru (form) -> 201
-POST {{baseUrl}}/products-create
+### P05 POST produk baru (form) -> 201 (BodyParsingMiddleware handle urlencoded)
+POST {{baseUrl}}/products/create
 Content-Type: application/x-www-form-urlencoded
 Accept: application/json
 
 name=Teh+Botol&price=5000&stock=50
 
-### POST produk tidak valid (contoh 422)
-POST {{baseUrl}}/products-create
+### P06 POST produk tidak valid -> 422 {success:false, message:'Validasi gagal', errors}
+POST {{baseUrl}}/products/create
 Content-Type: application/json
 Accept: application/json
 
@@ -48,12 +60,16 @@ Accept: application/json
   "stock": "abc"
 }
 
-### GET halaman HTML produk (Twig)
-GET {{baseUrl}}/products-page
+### P07 GET halaman HTML produk (Twig) -> 200 text/html
+GET {{baseUrl}}/products/page
 Accept: text/html
 
-### PUT update produk by id (JSON)
-PUT {{baseUrl}}/products/1
+### P08 GET halaman CRUD (Twig) -> 200 text/html
+GET {{baseUrl}}/products/crud
+Accept: text/html
+
+### P09 PUT update produk ada (JSON) -> 200
+PUT {{baseUrl}}/products/{{productId}}
 Content-Type: application/json
 Accept: application/json
 
@@ -63,7 +79,7 @@ Accept: application/json
   "stock": 10
 }
 
-### PUT update produk yang tidak ada (contoh 404)
+### P10 PUT update produk tidak ada -> 404
 PUT {{baseUrl}}/products/9999
 Content-Type: application/json
 Accept: application/json
@@ -74,14 +90,49 @@ Accept: application/json
   "stock": 10
 }
 
-### DELETE produk by id
-DELETE {{baseUrl}}/products/1
-Accept: application/json
-
-### DELETE produk yang tidak ada (contoh 404)
+### P11 DELETE produk tidak ada -> 404 (uji dulu pakai 9999, aman)
 DELETE {{baseUrl}}/products/9999
 Accept: application/json
 
+### P12 DELETE produk ada -> 200 {message:'Produk berhasil dihapus'}
+# Hati-hati: data hilang. Ganti id di bawah dengan id sisa/testing.
+DELETE {{baseUrl}}/products/2
+Accept: application/json
+
+############################################################
+### X1 Misc routes (index.php)
+############################################################
+
+### X01 Redirect helper /items -> 301 ke /products
+GET {{baseUrl}}/items
+Accept: application/json
+
+### X02 Route group /users/{id}/billing -> 200 {id}
+GET {{baseUrl}}/users/7/billing
+Accept: application/json
+
+### X03 Route group /users/{id}/product -> 200 array (ProductController::index)
+GET {{baseUrl}}/users/7/product
+Accept: application/json
+
+### X04 GET /mcp -> 200 array (ProductController::index, bukan JSON-RPC)
+GET {{baseUrl}}/mcp
+Accept: application/json
+
+### X05 GET /callbackbinding/{name} -> 200 + Set-Cookie: name=...
+GET {{baseUrl}}/callbackbinding/budi
+Accept: */*
+
+### X06 GET /foo -> 401 {hello:world} (PSR-7 example)
+GET {{baseUrl}}/foo
+Accept: application/json
+
+### X07 POST /foo echo query params -> 200 (coba ?a=1&b=2)
+POST {{baseUrl}}/foo?a=1&b=2
+Content-Type: application/json
+Accept: application/json
+
+{}
 
 ### PSR7-Example changing request
 POST {{baseUrl}}/foo
@@ -469,3 +520,136 @@ Accept: application/json
   "price": 1000,
   "stock": 10
 }
+
+############################################################
+### Exception Handling terstruktur (config/errorHandler.php
+### + helper/apperror.php + src/Exception/HttpException.php)
+### Envelope JSON: {success:false, message, status[, errors]}
+### HTML (Accept:text/html): templates/error.html.twig (message+status saja)
+### APP_DEBUG=false -> generik, tanpa trace/SQL/path/token
+############################################################
+
+### E01 404 produk tidak ada (JSON) -> {success:false, message:'Produk tidak ditemukan', status:404}
+GET {{baseUrl}}/products/show/9999
+Accept: application/json
+
+### E02 404 produk tidak ada (HTML) -> error.html.twig, tanpa JSON bocor
+GET {{baseUrl}}/products/show/9999
+Accept: text/html
+
+### E03 404 rute tidak ada (JSON) -> {success:false, message:'Rute tidak ditemukan', status:404}
+GET {{baseUrl}}/rute-yang-tidak-ada
+Accept: application/json
+
+### E04 404 rute tidak ada (HTML) -> error.html.twig status 404
+GET {{baseUrl}}/rute-yang-tidak-ada
+Accept: text/html
+
+### E05 405 method salah (JSON) -> {success:false, message:'Metode tidak diizinkan', status:405}
+# /products/create hanya POST; coba GET
+GET {{baseUrl}}/products/create
+Accept: application/json
+
+### E06 422 validasi create (JSON) -> {success:false, message:'Validasi gagal', errors, status:422}
+POST {{baseUrl}}/products/create
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "price": -100,
+  "stock": "abc"
+}
+
+### E07 422 validasi update body kosong (JSON) -> errors.general, bukan trace
+PUT {{baseUrl}}/products/1
+Content-Type: application/json
+Accept: application/json
+
+{}
+
+### E08 404 delete tidak ada (JSON) -> {success:false, status:404}, bukan stack trace
+DELETE {{baseUrl}}/products/9999
+Accept: application/json
+
+### E09 500 generik tanpa bocor (contoh: matikan DB lalu hit ini, harus tetap generik)
+# Harap: {success:false, message:'Gagal mengakses database'|'Terjadi kesalahan pada server', status:500}
+# Tidak boleh ada: SQL, DSN, path file, trace, token
+GET {{baseUrl}}/products/show/1
+Accept: application/json
+
+############################################################
+### M1 MCP JSON-RPC (POST /mcp -> McpController::handle)
+############################################################
+
+### M01 initialize -> 200 result.protocolVersion + serverInfo
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "initialize",
+  "params": {}
+}
+
+### M02 tools/list -> 200 result.tools[0].name = get_products
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/list",
+  "params": {}
+}
+
+### M03 tools/call get_products -> 200 result.content[0].text (dummy list)
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_products",
+    "arguments": {}
+  }
+}
+
+### M04 tools/call unknown tool -> 200 error.code -32602 Unknown tool
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "tool_tidak_ada",
+    "arguments": {}
+  }
+}
+
+### M05 method tidak dikenal -> 200 error.code -32601 Method not found
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "method_tidak_ada",
+  "params": {}
+}
+
+POST {{baseUrl}}/mcp
+Content-Type: application/json
+Accept: application/json
+
+bukan-json

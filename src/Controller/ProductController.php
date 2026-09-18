@@ -10,7 +10,7 @@ use Slim\Views\TwigMiddleware;
 use DI\Container;
 use Doctrine\ORM\EntityManager;
 use App\Entity\Product;
-use App\Exception\ValidationException;
+use App\Exception\NotFoundException;
 use App\Repository\ProductRepository;
 use App\Service\ProductService;
 
@@ -32,8 +32,9 @@ class ProductController
         $id = $args['id'];
         $product = $this->ps->find($id);
         if (!$product) {
-            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            // Dilempar ke error handler terpusat -> JSON {success:false,message,status:404}
+            // atau HTML error.html.twig bila Accept: text/html. Tanpa detail internal.
+            throw new NotFoundException('Produk tidak ditemukan');
         }
         $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
@@ -75,16 +76,9 @@ class ProductController
     {
         $data = $request->getParsedBody() ?? [];
 
-        try {
-            // Validasi add product ada di ProductService::create (via ProductValidator::validateForCreate)
-            $product = $this->ps->create((array) $data);
-        } catch (ValidationException $e) {
-            $response->getBody()->write(json_encode([
-                'message' => 'Validasi gagal',
-                'errors' => $e->getErrors(),
-            ], JSON_PRETTY_PRINT));
-            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
-        }
+        // ValidationException dibiarkan bubble ke error handler terpusat
+        // -> 422 {success:false, message:'Validasi gagal', errors, status:422}.
+        $product = $this->ps->create((array) $data);
 
         $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
         return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
@@ -95,20 +89,10 @@ class ProductController
         $id = $args['id'];
         $data = $request->getParsedBody() ?? [];
 
-        try {
-            // Validasi edit product ada di ProductService::update (via ProductValidator::validateForUpdate)
-            $product = $this->ps->update($id, (array) $data);
-        } catch (ValidationException $e) {
-            $response->getBody()->write(json_encode([
-                'message' => 'Validasi gagal',
-                'errors' => $e->getErrors(),
-            ], JSON_PRETTY_PRINT));
-            return $response->withStatus(422)->withHeader('Content-Type', 'application/json');
-        }
+        $product = $this->ps->update($id, (array) $data);
 
         if (!$product) {
-            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            throw new NotFoundException('Produk tidak ditemukan');
         }
         $response->getBody()->write(json_encode($product->toArray(), JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
@@ -119,8 +103,7 @@ class ProductController
         $id = $args['id'];
         $product = $this->ps->delete($id);
         if (!$product) {
-            $response->getBody()->write(json_encode(['error' => 'Produk tidak ditemukan']));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
+            throw new NotFoundException('Produk tidak ditemukan');
         }
         $response->getBody()->write(json_encode(['message' => 'Produk berhasil dihapus', 'id' => $id], JSON_PRETTY_PRINT));
         return $response->withHeader('Content-Type', 'application/json');
